@@ -32,6 +32,7 @@ class UserConfigIR:
         self.user_id = None
         self.user_pw = None
         self.blocked_author_name_set = set()
+        self.blocked_author_pattern = None
 
     def update_blocked_author_name_set(self, author_name: str):
         self.blocked_author_name_set.update([author_name])
@@ -102,17 +103,24 @@ class C1WebSitePollAndWriter:
             logger.error(e)
             return None
 
-    def _get_list_of_author_name_and_article_link_tuple(self, page_dump: str) -> tuple[str, str]:
+    def _get_list_of_article_meta_tuples(self, page_dump: str) -> tuple[str, str, str]:
         # 1. Find text that represent an author name.
         #         i.e. Find all <span> elements with CSS class 'list_author'.
         # 2. Find a link or a URL to the article, also.
         # 3. Add (`author_name`, `article_link`) tuples to `list_of_author_name_and_article_link_tuple`.
-        list_of_author_name_and_article_link_tuple = []
+        list_of_article_meta_tuples = []
         soup = BeautifulSoup(page_dump, 'html.parser')
         list_of_article_author_elements = soup.find_all('div', class_='list_author')
         for article_author_element in list_of_article_author_elements:
             # Find the first <span> element with a `title` attribute.
             # Please note that the title attribute specifies extra information about an element in HTML.
+            author_memo = None  # Default
+            memo_element = article_author_element.find('span', class_='memo')
+            if memo_element:
+                logger.info(f'Found {article_author_element}')
+                author_memo = memo_element.text
+            else:
+                logger.info(f'Not found {article_author_element}')
             title_element = article_author_element.find('span', title=True)
             if title_element:
                 # Let's get an author name from attribute `title` of that element.
@@ -129,9 +137,9 @@ class C1WebSitePollAndWriter:
                             const_service_base_url = 'https://www.clien.net'
                             article_link = const_service_base_url + a_tag['href']
                             # Finally, we got (`author_name`, `article_link`) tuple.
-                            target_tuple = (author_name, article_link)
-                            list_of_author_name_and_article_link_tuple.append(target_tuple)
-        return list_of_author_name_and_article_link_tuple
+                            meta_tuple = (article_link, author_name, author_memo)
+                            list_of_article_meta_tuples.append(meta_tuple)
+        return list_of_article_meta_tuples
 
     def _write_output(self, article_link: str):
         if self.visited_link_cache.is_hit(article_link):
@@ -170,13 +178,22 @@ class C1WebSitePollAndWriter:
         page_dump = self._get_page_dump()
         if not page_dump:
             return
-        list_of_author_name_and_article_link_tuple = self._get_list_of_author_name_and_article_link_tuple(page_dump)
-        for t in list_of_author_name_and_article_link_tuple:
-            author_name = t[0]
-            if author_name in user_config_ir.blocked_author_name_set:
-                article_link = t[1]
-                logger.info(f'Found ({author_name}, {article_link})')
-                self._write_output(article_link)
+        list_of_article_meta_tuples = self._get_list_of_article_meta_tuples(page_dump)
+        # Filter and write
+        for t in list_of_article_meta_tuples:
+            article_link = t[0]
+            author_name = t[1]
+            author_memo = t[2]
+            logger.info(f'Matching (({author_name}), ({author_memo}), ({article_link}))')
+            if True:
+                if author_name in user_config_ir.blocked_author_name_set:
+                    logger.info(f'Found ({author_name}, {article_link})')
+                    self._write_output(article_link)
+            # If False. Because it's deprecated
+            if False:
+                if author_memo and author_memo.find(user_config_ir.blocked_author_pattern) != -1:
+                    logger.info(f'Found (({author_name}), ({author_memo}), ({article_link}))')
+                    self._write_output(article_link)
 
     def _get_time_to_sleep_in_sec(self) -> int:
         const_base_time_to_sleep_in_sec = 30
@@ -237,15 +254,19 @@ class C1WebSitePollAndWriter:
             self._sleep_for_a_while()
 
 
-def poll_and_write_bbs(user_config: dict) -> None:
-
+def build_user_config_ir(user_config: dict) -> UserConfigIR:
     # Build an object of `UserConfigIR` from `user_config` dictionary.
     user_config_ir = UserConfigIR()
     user_config_ir.user_id = user_config['users'][0]['id']
     user_config_ir.user_pw = user_config['users'][0]['pw']
     for author_name in user_config['blocked_author_names']:
         user_config_ir.update_blocked_author_name_set(author_name)
+    user_config_ir.blocked_author_pattern = user_config['blocked_author_pattern']
+    return user_config_ir
 
+
+def poll_and_write_bbs(user_config: dict) -> None:
+    user_config_ir = build_user_config_ir(user_config)  # An object is created by the callee.
     # TODO(@pastry-personal5): Introduce multiple objects here.
     obj = C1WebSitePollAndWriter()
     obj.poll_and_write_bbs(user_config_ir)
