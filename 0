@@ -1,0 +1,5 @@
+# This file must be used with "source <filepath>" *from bash*
+# you cannot run it directly
+
+source ./venv/Scripts/activate
+export PYTHONIOENCODING=utf-8
