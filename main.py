@@ -1,8 +1,7 @@
 """
-    This program polls a pre-defined pattern from a bulletin board system.
-    If a pattern is found, it writes pre-defined output text to the bulletin board system.
-    TODO(@pastry-personal5): Do not use Selenium. It's to run this program in a text-only environment.
-
+This program polls a predefined pattern from a bulletin board system.
+If the pattern is found, it writes a predefined output to the bulletin board system.
+TODO (@pastry-personal5): Avoid using Selenium to allow the program to run in a text-only environment.
 """
 
 import os
