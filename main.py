@@ -26,16 +26,29 @@ except ImportError:
     from yaml import Loader
 
 
-class UserConfigIR:
+class UserConfigIRForSingleWebSite:
 
     def __init__(self):
+        self.alias = None
         self.user_id = None
         self.user_pw = None
         self.blocked_author_name_set = set()
-        self.blocked_author_pattern = None
+        self.blocked_author_memo_pattern = None
 
     def update_blocked_author_name_set(self, author_name: str):
         self.blocked_author_name_set.update([author_name])
+
+
+class UserConfigIR:
+
+    def __init__(self):
+        self.user_config_ir_for_single_web_site_dict = {}
+
+    def get_user_config_ir_for_single_web_site(self, alias: str):
+        return self.user_config_ir_for_single_web_site_dict[alias]
+
+    def add_entry(self, alias: str, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite):
+        self.user_config_ir_for_single_web_site_dict[alias] = user_config_ir_for_single_web_site
 
 
 class VisitedLinkCache:
@@ -174,7 +187,7 @@ class C1WebSitePollAndWriter:
         # Finally.
         self.visited_link_cache.add_entry(article_link)
 
-    def _do_oneshot_poll_and_write_bbs(self, user_config_ir: UserConfigIR) -> None:
+    def _do_oneshot_poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
         page_dump = self._get_page_dump()
         if not page_dump:
             return
@@ -186,12 +199,12 @@ class C1WebSitePollAndWriter:
             author_memo = t[2]
             logger.info(f'Matching (({author_name}), ({author_memo}), ({article_link}))')
             if True:
-                if author_name in user_config_ir.blocked_author_name_set:
+                if author_name in user_config_ir_for_single_web_site.blocked_author_name_set:
                     logger.info(f'Found ({author_name}, {article_link})')
                     self._write_output(article_link)
             # If False. Because it's deprecated
             if False:
-                if author_memo and author_memo.find(user_config_ir.blocked_author_pattern) != -1:
+                if author_memo and author_memo.find(user_config_ir_for_single_web_site.blocked_author_memo_pattern) != -1:
                     logger.info(f'Found (({author_name}), ({author_memo}), ({article_link}))')
                     self._write_output(article_link)
 
@@ -242,34 +255,79 @@ class C1WebSitePollAndWriter:
         except SC.exceptions.NoSuchElementException:
             pass
 
-    def _prepare(self, user_config_ir: UserConfigIR) -> None:
-        user_id = user_config_ir.user_id
-        user_pw = user_config_ir.user_pw
+    def _prepare(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
+        user_id = user_config_ir_for_single_web_site.user_id
+        user_pw = user_config_ir_for_single_web_site.user_pw
         self._create_link_visitor_client_context_with_selenium(user_id, user_pw)
 
-    def poll_and_write_bbs(self, user_config_ir: UserConfigIR) -> None:
-        self._prepare(user_config_ir)
+    def poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
+        self._prepare(user_config_ir_for_single_web_site)
         while True:
-            self._do_oneshot_poll_and_write_bbs(user_config_ir)
+            self._do_oneshot_poll_and_write_bbs(user_config_ir_for_single_web_site)
             self._sleep_for_a_while()
 
+
+def is_valid_user_config(user_config: dict) -> bool:
+    if 'web_site' not in user_config:
+        return False
+    web_site = user_config['web_site']
+    if len(web_site) <= 0:
+        return False
+    for w in web_site:
+        if 'alias' not in w:
+            return False
+        if 'user' not in w:
+            return False
+        user = w['user']
+        if 'id' not in user:
+            return False
+        if 'pw' not in user:
+            return False
+        if 'blocked_author_memo_pattern' not in w:
+            return False
+        blocked_author_memo_pattern = w['blocked_author_memo_pattern']
+        if len(blocked_author_memo_pattern) <= 0:
+            return False
+    return True
 
 def build_user_config_ir(user_config: dict) -> UserConfigIR:
     # Build an object of `UserConfigIR` from `user_config` dictionary.
     user_config_ir = UserConfigIR()
-    user_config_ir.user_id = user_config['users'][0]['id']
-    user_config_ir.user_pw = user_config['users'][0]['pw']
-    for author_name in user_config['blocked_author_names']:
-        user_config_ir.update_blocked_author_name_set(author_name)
-    user_config_ir.blocked_author_pattern = user_config['blocked_author_pattern']
+    for w in user_config['web_site']:
+        alias = w['alias']
+        user = w['user']
+        id = user['id']
+        pw = user['pw']
+        blocked_author_memo_pattern = w['blocked_author_memo_pattern']
+        blocked_author_name = w['blocked_author_name']
+
+        user_config_for_single_web_site_ir = UserConfigIRForSingleWebSite()
+        user_config_for_single_web_site_ir.alias = alias
+        user_config_for_single_web_site_ir.user_id = id
+        user_config_for_single_web_site_ir.user_pw = pw
+        for b in blocked_author_name:
+            user_config_for_single_web_site_ir.update_blocked_author_name_set(b)
+        user_config_for_single_web_site_ir.blocked_author_memo_pattern = blocked_author_memo_pattern
+
+        # Finally
+        user_config_ir.add_entry(alias, user_config_for_single_web_site_ir)
+
     return user_config_ir
 
 
 def poll_and_write_bbs(user_config: dict) -> None:
     user_config_ir = build_user_config_ir(user_config)  # An object is created by the callee.
-    # TODO(@pastry-personal5): Introduce multiple objects here.
-    obj = C1WebSitePollAndWriter()
-    obj.poll_and_write_bbs(user_config_ir)
+
+    # TODO(@pastry-personal5): Introduce multiple web sites or objects here.
+
+    # For now, let's do the job for 'c1' web site.
+    const_alias = 'c1'
+    user_config_ir_for_single_web_site = user_config_ir.get_user_config_ir_for_single_web_site(const_alias)
+    if user_config_ir_for_single_web_site:
+        obj = C1WebSitePollAndWriter()
+        obj.poll_and_write_bbs(user_config_ir_for_single_web_site)
+    else:
+        logger.error(f'A user config for web site {const_alias} has not been found.')
 
 
 def read_user_config() -> dict:
@@ -281,20 +339,6 @@ def read_user_config() -> dict:
         logger.error(f'Could not read file: {const_user_config_file_path}')
         return {}
     return user_config
-
-
-def is_valid_user_config(user_config: dict) -> bool:
-    if 'users' not in user_config:
-        return False
-    users = user_config['users']
-    if len(users) <= 0:
-        return False
-    for user in users:
-        if 'id' not in user:
-            return False
-        if 'pw' not in user:
-            return False
-    return True
 
 
 def main():
