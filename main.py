@@ -12,7 +12,6 @@ import time
 from bs4 import BeautifulSoup
 from loguru import logger
 import requests
-import selenium
 from selenium import common as SC
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -109,7 +108,7 @@ class C1WebSitePollAndWriter:
         # Send a request to the `const_target_base_url`
         try:
             logger.info(f'Try to get {const_target_base_url} ...')
-            response = requests.get(const_target_base_url)
+            response = requests.get(const_target_base_url, timeout=32)
             return response.text
         except requests.exceptions.ConnectionError as e:
             logger.error(e)
@@ -289,21 +288,22 @@ def is_valid_user_config(user_config: dict) -> bool:
             return False
     return True
 
+
 def build_user_config_ir(user_config: dict) -> UserConfigIR:
     # Build an object of `UserConfigIR` from `user_config` dictionary.
     user_config_ir = UserConfigIR()
     for w in user_config['web_site']:
         alias = w['alias']
         user = w['user']
-        id = user['id']
-        pw = user['pw']
+        user_id = user['id']
+        user_pw = user['pw']
         blocked_author_memo_pattern = w['blocked_author_memo_pattern']
         blocked_author_name = w['blocked_author_name']
 
         user_config_for_single_web_site_ir = UserConfigIRForSingleWebSite()
         user_config_for_single_web_site_ir.alias = alias
-        user_config_for_single_web_site_ir.user_id = id
-        user_config_for_single_web_site_ir.user_pw = pw
+        user_config_for_single_web_site_ir.user_id = user_id
+        user_config_for_single_web_site_ir.user_pw = user_pw
         for b in blocked_author_name:
             user_config_for_single_web_site_ir.update_blocked_author_name_set(b)
         user_config_for_single_web_site_ir.blocked_author_memo_pattern = blocked_author_memo_pattern
