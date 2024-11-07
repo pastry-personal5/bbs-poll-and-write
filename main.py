@@ -128,7 +128,6 @@ class C1WebSitePollAndWriter:
             author_memo = None  # Default
             memo_element = article_author_element.find('span', class_='memo')
             if memo_element:
-                logger.info(f'Found {article_author_element}')
                 author_memo = memo_element.text
             else:
                 logger.info(f'Not found {article_author_element}')
