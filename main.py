@@ -185,7 +185,7 @@ class C1WebSitePollAndWriter:
         # Finally.
         self.visited_link_cache.add_entry(article_link)
 
-    def _do_oneshot_poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
+    def _do_onetime_poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
         page_dump = self._get_page_dump()
         if not page_dump:
             return
@@ -261,7 +261,7 @@ class C1WebSitePollAndWriter:
     def poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
         self._prepare(user_config_ir_for_single_web_site)
         while True:
-            self._do_oneshot_poll_and_write_bbs(user_config_ir_for_single_web_site)
+            self._do_onetime_poll_and_write_bbs(user_config_ir_for_single_web_site)
             self._sleep_for_a_while()
 
 
