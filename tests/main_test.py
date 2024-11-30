@@ -65,6 +65,7 @@ class TestConfigValidation(unittest.TestCase):
                     "alias": "test_site",
                     "user": {"id": "test_user", "pw": "test_pw"},
                     "blocked_author_memo_pattern": "test_pattern",
+                    "polling_interval": {"median": 180, "upper_limit": 10, "lower_limit": -10},
                 }
             ]
         }

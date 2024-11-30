@@ -108,6 +108,9 @@ class C1WebSitePollAndWriter:
         self.const_default_polling_interval_upper_limit = 60
         self.const_default_polling_interval_lower_limit = -60
         self.polling_interval = {}
+        self.polling_interval['median'] = self.const_default_polling_interval_median
+        self.polling_interval['upper_limit'] = self.const_default_polling_interval_upper_limit
+        self.polling_interval['lower_limit'] = self.const_default_polling_interval_lower_limit
 
     def _get_page_dump(self):
         const_target_base_url = 'https://www.clien.net/service/board/park'
@@ -265,16 +268,10 @@ class C1WebSitePollAndWriter:
         if user_config_ir_for_single_web_site.polling_interval:
             if 'median' in user_config_ir_for_single_web_site.polling_interval:
                 self.polling_interval['median'] = user_config_ir_for_single_web_site.polling_interval['median']
-            else:
-                self.polling_interval['median'] = self.const_default_polling_interval_median
             if 'upper_limit' in user_config_ir_for_single_web_site.polling_interval:
                 self.polling_interval['upper_limit'] = user_config_ir_for_single_web_site.polling_interval['upper_limit']
-            else:
-                self.polling_interval['upper_limit'] = self.const_default_polling_interval_upper_limit
             if 'lower_limit' in user_config_ir_for_single_web_site.polling_interval:
                 self.polling_interval['lower_limit'] = user_config_ir_for_single_web_site.polling_interval['lower_limit']
-            else:
-                self.polling_interval['lower_limit'] = self.const_default_polling_interval_lower_limit
         logger.info(pprint.pformat(self.polling_interval))
         self._create_link_visitor_client_context_with_selenium(user_id, user_pw)
 
@@ -319,7 +316,10 @@ def build_user_config_ir(user_config: dict) -> UserConfigIR:
         user_pw = user['pw']
         blocked_author_memo_pattern = w['blocked_author_memo_pattern']
         blocked_author_name = w['blocked_author_name']
-        polling_interval = w['polling_interval']
+        if 'polling_interval' in w:
+            polling_interval = w['polling_interval']
+        else:
+            polling_interval = None
 
         user_config_for_single_web_site_ir = UserConfigIRForSingleWebSite()
         user_config_for_single_web_site_ir.alias = alias
@@ -328,7 +328,8 @@ def build_user_config_ir(user_config: dict) -> UserConfigIR:
         for b in blocked_author_name:
             user_config_for_single_web_site_ir.update_blocked_author_name_set(b)
         user_config_for_single_web_site_ir.blocked_author_memo_pattern = blocked_author_memo_pattern
-        user_config_for_single_web_site_ir.polling_interval = copy.deepcopy(polling_interval)
+        if polling_interval:
+            user_config_for_single_web_site_ir.polling_interval = copy.deepcopy(polling_interval)
 
         # Finally
         user_config_ir.add_entry(alias, user_config_for_single_web_site_ir)
