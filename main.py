@@ -4,8 +4,10 @@ If the pattern is found, it writes a predefined output to the bulletin board sys
 TODO (@pastry-personal5): Avoid using Selenium to allow the program to run in a text-only environment.
 """
 
+import copy
 import os
 import pickle
+import pprint
 import random
 import time
 
@@ -32,6 +34,7 @@ class UserConfigIRForSingleWebSite:
         self.user_pw = None
         self.blocked_author_name_set = set()
         self.blocked_author_memo_pattern = None
+        self.polling_interval = {}
 
     def update_blocked_author_name_set(self, author_name: str):
         self.blocked_author_name_set.update([author_name])
@@ -101,6 +104,10 @@ class C1WebSitePollAndWriter:
     def __init__(self):
         self.visited_link_cache = VisitedLinkCache()
         self.client_context = None
+        self.const_default_polling_interval_median = 180
+        self.const_default_polling_interval_upper_limit = 60
+        self.const_default_polling_interval_lower_limit = -60
+        self.polling_interval = {}
 
     def _get_page_dump(self):
         const_target_base_url = 'https://www.clien.net/service/board/park'
@@ -206,8 +213,8 @@ class C1WebSitePollAndWriter:
                     self._write_output(article_link)
 
     def _get_time_to_sleep_in_sec(self) -> int:
-        const_base_time_to_sleep_in_sec = 30
-        return const_base_time_to_sleep_in_sec + random.randrange(-10, 10)
+        const_base_time_to_sleep_in_sec = self.const_default_polling_interval_median
+        return const_base_time_to_sleep_in_sec + random.randrange(self.const_default_polling_interval_lower_limit, self.const_default_polling_interval_upper_limit)
 
     def _sleep_for_a_while(self) -> None:
         time_to_sleep_in_sec = self._get_time_to_sleep_in_sec()
@@ -255,6 +262,20 @@ class C1WebSitePollAndWriter:
     def _prepare(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
         user_id = user_config_ir_for_single_web_site.user_id
         user_pw = user_config_ir_for_single_web_site.user_pw
+        if user_config_ir_for_single_web_site.polling_interval:
+            if 'median' in user_config_ir_for_single_web_site.polling_interval:
+                self.polling_interval['median'] = user_config_ir_for_single_web_site.polling_interval['median']
+            else:
+                self.polling_interval['median'] = self.const_default_polling_interval_median
+            if 'upper_limit' in user_config_ir_for_single_web_site.polling_interval:
+                self.polling_interval['upper_limit'] = user_config_ir_for_single_web_site.polling_interval['upper_limit']
+            else:
+                self.polling_interval['upper_limit'] = self.const_default_polling_interval_upper_limit
+            if 'lower_limit' in user_config_ir_for_single_web_site.polling_interval:
+                self.polling_interval['lower_limit'] = user_config_ir_for_single_web_site.polling_interval['lower_limit']
+            else:
+                self.polling_interval['lower_limit'] = self.const_default_polling_interval_lower_limit
+        logger.info(pprint.pformat(self.polling_interval))
         self._create_link_visitor_client_context_with_selenium(user_id, user_pw)
 
     def poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
@@ -298,6 +319,7 @@ def build_user_config_ir(user_config: dict) -> UserConfigIR:
         user_pw = user['pw']
         blocked_author_memo_pattern = w['blocked_author_memo_pattern']
         blocked_author_name = w['blocked_author_name']
+        polling_interval = w['polling_interval']
 
         user_config_for_single_web_site_ir = UserConfigIRForSingleWebSite()
         user_config_for_single_web_site_ir.alias = alias
@@ -306,6 +328,7 @@ def build_user_config_ir(user_config: dict) -> UserConfigIR:
         for b in blocked_author_name:
             user_config_for_single_web_site_ir.update_blocked_author_name_set(b)
         user_config_for_single_web_site_ir.blocked_author_memo_pattern = blocked_author_memo_pattern
+        user_config_for_single_web_site_ir.polling_interval = copy.deepcopy(polling_interval)
 
         # Finally
         user_config_ir.add_entry(alias, user_config_for_single_web_site_ir)
@@ -329,7 +352,7 @@ def poll_and_write_bbs(user_config: dict) -> None:
 
 
 def read_user_config() -> dict:
-    const_user_config_file_path = './main_config.yaml'
+    const_user_config_file_path = './user_config.yaml'
     try:
         f = open(const_user_config_file_path, 'r', encoding='utf-8')
         user_config = yaml.load(f.read(), Loader=Loader)

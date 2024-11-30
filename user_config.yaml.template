@@ -1,0 +1,14 @@
+web_site:
+  - alias: c1
+    user:
+      id: <YOUR ID HERE>
+      pw: <YOUR PASSWORD HERE>
+    blocked_author_memo_pattern: "<YOUR PATTERN>"
+    # TODO(@pastry-personal5): To be deprecated. It's to use `blocked_author_memo_pattern` only.
+    blocked_author_name:
+      - <NAME>
+      - <NAME>
+    polling_interval:
+      median: 30
+      upper_limit: 10
+      lower_limit: -10
