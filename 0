@@ -1,5 +1,14 @@
-# This file must be used with "source <filepath>" *from bash*
+# This file must be used with "source <FILE>" *from bash*
 # you cannot run it directly
 
-source ./venv/Scripts/activate
+FILEPATH_0="./venv/bin/activate"
+FILEPATH_1="./venv/Scripts/activate"
+
+if [ -e "${FILEPATH_0}" ]; then
+	source ${FILEPATH_0}
+fi
+if [ -e "${FILEPATH_1}" ]; then
+	source ${FILEPATH_1}
+fi
+
 export PYTHONIOENCODING=utf-8
