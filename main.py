@@ -216,8 +216,8 @@ class C1WebSitePollAndWriter:
                     self._write_output(article_link)
 
     def _get_time_to_sleep_in_sec(self) -> int:
-        const_base_time_to_sleep_in_sec = self.const_default_polling_interval_median
-        return const_base_time_to_sleep_in_sec + random.randrange(self.const_default_polling_interval_lower_limit, self.const_default_polling_interval_upper_limit)
+        const_base_time_to_sleep_in_sec = self.polling_interval['median']
+        return const_base_time_to_sleep_in_sec + random.randrange(self.polling_interval['lower_limit'], self.polling_interval['upper_limit'])
 
     def _sleep_for_a_while(self) -> None:
         time_to_sleep_in_sec = self._get_time_to_sleep_in_sec()
@@ -272,7 +272,7 @@ class C1WebSitePollAndWriter:
                 self.polling_interval['upper_limit'] = user_config_ir_for_single_web_site.polling_interval['upper_limit']
             if 'lower_limit' in user_config_ir_for_single_web_site.polling_interval:
                 self.polling_interval['lower_limit'] = user_config_ir_for_single_web_site.polling_interval['lower_limit']
-        logger.info(pprint.pformat(self.polling_interval))
+        logger.info('polling_interval is: ' + pprint.pformat(self.polling_interval))
         self._create_link_visitor_client_context_with_selenium(user_id, user_pw)
 
     def poll_and_write_bbs(self, user_config_ir_for_single_web_site: UserConfigIRForSingleWebSite) -> None:
