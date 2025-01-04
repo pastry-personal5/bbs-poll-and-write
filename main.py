@@ -105,12 +105,12 @@ class C1WebSitePollAndWriter:
         self.visited_link_cache = VisitedLinkCache()
         self.client_context = None
         self.const_default_polling_interval_median = 180
-        self.const_default_polling_interval_upper_limit = 60
-        self.const_default_polling_interval_lower_limit = -60
+        self.const_default_polling_interval_upper_offset = 60
+        self.const_default_polling_interval_lower_offset = -60
         self.polling_interval = {}
         self.polling_interval['median'] = self.const_default_polling_interval_median
-        self.polling_interval['upper_limit'] = self.const_default_polling_interval_upper_limit
-        self.polling_interval['lower_limit'] = self.const_default_polling_interval_lower_limit
+        self.polling_interval['upper_offset'] = self.const_default_polling_interval_upper_offset
+        self.polling_interval['lower_offset'] = self.const_default_polling_interval_lower_offset
 
     def _get_page_dump(self):
         const_target_base_url = 'https://www.clien.net/service/board/park'
@@ -217,7 +217,7 @@ class C1WebSitePollAndWriter:
 
     def _get_time_to_sleep_in_sec(self) -> int:
         const_base_time_to_sleep_in_sec = self.polling_interval['median']
-        return const_base_time_to_sleep_in_sec + random.randrange(self.polling_interval['lower_limit'], self.polling_interval['upper_limit'])
+        return const_base_time_to_sleep_in_sec + random.randrange(self.polling_interval['lower_offset'], self.polling_interval['upper_offset'])
 
     def _sleep_for_a_while(self) -> None:
         time_to_sleep_in_sec = self._get_time_to_sleep_in_sec()
@@ -268,10 +268,10 @@ class C1WebSitePollAndWriter:
         if user_config_ir_for_single_web_site.polling_interval:
             if 'median' in user_config_ir_for_single_web_site.polling_interval:
                 self.polling_interval['median'] = user_config_ir_for_single_web_site.polling_interval['median']
-            if 'upper_limit' in user_config_ir_for_single_web_site.polling_interval:
-                self.polling_interval['upper_limit'] = user_config_ir_for_single_web_site.polling_interval['upper_limit']
-            if 'lower_limit' in user_config_ir_for_single_web_site.polling_interval:
-                self.polling_interval['lower_limit'] = user_config_ir_for_single_web_site.polling_interval['lower_limit']
+            if 'upper_offset' in user_config_ir_for_single_web_site.polling_interval:
+                self.polling_interval['upper_offset'] = user_config_ir_for_single_web_site.polling_interval['upper_offset']
+            if 'lower_offset' in user_config_ir_for_single_web_site.polling_interval:
+                self.polling_interval['lower_offset'] = user_config_ir_for_single_web_site.polling_interval['lower_offset']
         logger.info('polling_interval is: ' + pprint.pformat(self.polling_interval))
         self._create_link_visitor_client_context_with_selenium(user_id, user_pw)
 

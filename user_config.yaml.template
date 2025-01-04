@@ -10,5 +10,5 @@ web_site:
       - <NAME>
     polling_interval:
       median: 30
-      upper_limit: 10
-      lower_limit: -10
+      upper_offset: 10
+      lower_offset: -10
